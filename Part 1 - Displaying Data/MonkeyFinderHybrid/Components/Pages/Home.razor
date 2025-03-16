@@ -1,30 +1,55 @@
 ﻿@page "/"
 @inject MonkeyService MonkeyService
-
-@if (monkeys is null)
-{
-    <p><em>Loading...</em></p>
-}
-else
-{
-    <ul class="card-list">
-        @foreach (var monkey in monkeys)
-        {
-            <li class="card-item">
-                <img class="card-image" src="@monkey.Image">
-                <div class="card-content">
-                    <h2>@monkey.Name</h2>
-                    <p>@monkey.Location</p>
-                </div>
-            </li>
-        }
-    </ul>
-}
+@inject IDialogService DialogService
+<div>
+    <button class="button-yellow" @onclick="@AddMonkey">Add New Monkey</button>
+    
+    @if (monkeys is null)
+    {
+        <p><em>Loading...</em></p>
+    }
+    else
+    {
+        <ul class="card-list">
+            @foreach (var monkey in monkeys)
+            {
+                <li class="card-item">
+                    <img class="card-image" src="@monkey.Image">
+                    <div class="card-content">
+                        <h2>@monkey.Name</h2>
+                        <p>@monkey.Location</p>
+                    </div>
+                </li>
+            }
+        </ul>
+    }
+</div>
 
 @code {
     private List<Monkey> monkeys = new();
+
+    private Monkey DialogData { get; set; } = new();
+
     protected override async Task OnInitializedAsync()
     {
         monkeys = await MonkeyService.GetMonkeys();
+    }
+        private async Task AddMonkey()
+    {
+        var data = new Monkey();
+        var dialog = await DialogService.ShowDialogAsync<SimpleCustomizedDialog>(data, new DialogParameters()
+            {
+                Title = $"Add a New Monkey",
+                PreventDismissOnOverlayClick = true,
+                PreventScroll = true,
+            });
+
+        var result = await dialog.Result;
+        if (!result.Cancelled && result.Data is not null)
+        {
+            DialogData = (Monkey)result.Data;
+            MonkeyService.AddMonkey(DialogData);
+            monkeys = await MonkeyService.GetMonkeys();
+        }
     }
 }
